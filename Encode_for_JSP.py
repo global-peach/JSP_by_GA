@@ -75,13 +75,12 @@ class Encode:
                     List_Machine_weizhi = []
                     for k in range(len(D)):  # 每道工序可使用的机器以及机器的加工时间
                         Useing_Machine = D[k]
-                        if Useing_Machine != 9999:  # 确定可加工该工序的机器
+                        if Useing_Machine is not None and len(Useing_Machine) > 0:  # 确定可加工该工序的机器
                             List_Machine_weizhi.append(k)
                     Machine_Select = []
                     for Machine_add in List_Machine_weizhi:  # 将这道工序的可用机器时间和以前积累的机器时间相加
                         #  比较可用机器的时间加上以前累计的机器时间的时间值，并选出时间最小
-                        Machine_Select.append(Machine_time[Machine_add] + D[
-                            Machine_add])
+                        Machine_Select.append(Machine_time[Machine_add] + min(D[Machine_add]))
                     Min_time = min(Machine_Select)
                     K = Machine_Select.index(Min_time)
                     I = List_Machine_weizhi[K]
@@ -110,14 +109,13 @@ class Encode:
                     List_Machine_weizhi = []
                     for k in range(len(D)):  # 每道工序可使用的机器以及机器的加工时间
                         Useing_Machine = D[k]
-                        if Useing_Machine == 9999:  # 确定可加工该工序的机器
+                        if Useing_Machine is None or len(Useing_Machine) == 0:  # 确定可加工该工序的机器
                             continue
                         else:
                             List_Machine_weizhi.append(k)
                     Machine_Select = []
                     for Machine_add in List_Machine_weizhi:  # 将这道工序的可用机器时间和以前积累的机器时间相加
-                        Machine_time[Machine_add] = Machine_time[Machine_add] + D[
-                            Machine_add]  # 比较可用机器的时间加上以前累计的机器时间的时间值，并选出时间最小
+                        Machine_time[Machine_add] = Machine_time[Machine_add] + min(D[Machine_add])  # 比较可用机器的时间加上以前累计的机器时间的时间值，并选出时间最小
                         Machine_Select.append(Machine_time[Machine_add])
                     Machine_Index_add = Machine_Select.index(min(Machine_Select))
                     site = self.Site(g, j)
@@ -143,7 +141,7 @@ class Encode:
                     List_Machine_weizhi = []
                     Site=0
                     for k in range(len(D)):  # 每道工序可使用的机器以及机器的加工时间
-                        if D[k] == 9999:  # 确定可加工该工序的机器
+                        if D[k] is None or len(D[k]) == 0:  # 确定可加工该工序的机器
                             continue
                         else:
                             List_Machine_weizhi.append(Site)

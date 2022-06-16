@@ -17,10 +17,10 @@ class GA:
         self.Max_Itertions=10  #最大迭代次数
  
     #适应度
-    def fitness(self,CHS,J,Processing_time,M_num,Len, Machine_start_time):
+    def fitness(self,CHS,J,Processing_time,M_num,Len, Machine_start_time, Time_efficent):
         Fit=[]
         for i in range(len(CHS)):
-            d = Decode(J, Processing_time, M_num, Machine_start_time)
+            d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent)
             Fit.append(d.Decode_1(CHS[i],Len))
         return Fit
  
@@ -122,9 +122,9 @@ class GA:
             Machine_using = O[O_i][O_j]
             Machine_time = []
             for j in Machine_using:
-                if j != 9999:
+                if j is not None and len(j) > 0:
                     Machine_time.append(j)
-            Min_index = Machine_time.index(min(Machine_time))
+            Min_index = Machine_time.index(min(min(Machine_time)))
             MS[i] = Min_index
         CHS=np.hstack((MS,OS))
         return CHS
@@ -164,7 +164,7 @@ class GA:
         idx = np.random.choice(np.arange(len(Fit_value)), size=len(Fit_value), replace=True, p=(Fit) / (Fit.sum()))
         return idx
 
-    def start(self, Processing_time, Processing_group, Machine_start_time):
+    def start(self, Processing_time, Processing_group, Machine_start_time, Time_efficent):
         J = {}
         J_num = 0
         M_num = 0
@@ -185,7 +185,7 @@ class GA:
         Worst_fit = []
         Avg_fit = []
         for i in range(self.Max_Itertions):
-            Fit = self.fitness(C, J, Processing_time, M_num, Len_Chromo, Machine_start_time)
+            Fit = self.fitness(C, J, Processing_time, M_num, Len_Chromo, Machine_start_time, Time_efficent)
             Best = C[Fit.index(min(Fit))]
             best_fitness = min(Fit)
             worst_fit = max(Fit)
@@ -225,15 +225,15 @@ class GA:
                 if offspring !=[]:
                     Fit = []
                     for i in range(len(offspring)):
-                        d = Decode(J, Processing_time, M_num, Machine_start_time)
+                        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent)
                         Fit.append(d.Decode_1(offspring[i], Len_Chromo))
                     C[j] = offspring[Fit.index(min(Fit))]
-        d = Decode(J, Processing_time, M_num, Machine_start_time)
+        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent)
         Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
         return d, Best_fit, Worst_fit, Avg_fit
  
-    def main(self,Processing_time, Processing_Group, Machine_start_time):
-        d, Best_fit, Worst_fit, Avg_fit = self.start(Processing_time, Processing_Group, Machine_start_time)
+    def main(self,Processing_time, Processing_Group, Machine_start_time, Time_efficent):
+        d, Best_fit, Worst_fit, Avg_fit = self.start(Processing_time, Processing_Group, Machine_start_time, Time_efficent)
         d.Gantt(d.Machines)
         x = np.linspace(0, self.Max_Itertions, self.Max_Itertions)
         plt.plot(x, Best_fit, x, Worst_fit, x, Avg_fit,'-k')
@@ -244,6 +244,6 @@ class GA:
         plt.show()
  
 if __name__=='__main__':
-    from test1 import Processing_time, Processing_Group, Machine_start_time
+    from test1 import Processing_time, Processing_Group, Machine_start_time, Time_efficent
     g=GA()
-    g.main(Processing_time, Processing_Group, Machine_start_time)
+    g.main(Processing_time, Processing_Group, Machine_start_time, Time_efficent)

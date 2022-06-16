@@ -6,9 +6,10 @@ from Machines import Machine_Time_window
 import numpy as np
  
 class Decode:
-    def __init__(self,J,Processing_time,M_num, Machine_start_time):
+    def __init__(self,J,Processing_time,M_num, Machine_start_time, Time_efficent):
         self.Processing_time = Processing_time
         self.Machine_start_time = Machine_start_time
+        self.Time_efficent = Time_efficent
         self.Scheduled = []  # 已经排产过的工序
         self.M_num = M_num
         self.Machines = []  # 存储机器类
@@ -37,7 +38,7 @@ class Decode:
                 M_ij=[]
                 T_ij=[]
                 for Mac_num in range(len(O_j)):  # 寻找MS对应部分的机器时间和机器顺序
-                    if O_j[Mac_num] != 9999:
+                    if O_j[Mac_num] is not None and len(O_j[Mac_num]) > 0:
                         M_ij.append(Mac_num)
                         T_ij.append(O_j[Mac_num])
                     else:
@@ -47,8 +48,7 @@ class Decode:
             JM.append(JM_i)
             T.append(T_i)
         return JM,T
-    def Earliest_Start(self,Job,O_num,Machine,JM):
-        P_t=self.Processing_time[Job][O_num][Machine]
+    def Earliest_Start(self,Job,O_num,Machine,JM): # 计算工序的开始时间
         last_O_end = self.Jobs[Job].Last_Processing_end_time  # 上道工序结束时间
         Selected_Machine=Machine
         machine_start = 0   # 机器开工时间
@@ -72,6 +72,15 @@ class Decode:
         #                 ealiest_start = last_O_end
         #                 break
         M_Ealiest = ealiest_start
+        # P_t=self.Processing_time[Job][O_num][Machine]
+        efficent = -1 # 根据开始时间获取能效
+        for e in self.Time_efficent:
+            if M_Ealiest >= e:
+                efficent += 1
+            else:
+                break
+        #efficent = min(efficent, len(self.Processing_time[Job][O_num][Machine]) - 1)
+        P_t = self.Processing_time[Job][O_num][Machine][efficent] # 根据能效获取节拍
         End_work_time = M_Ealiest + P_t
         return M_Ealiest, Selected_Machine, P_t, O_num,last_O_end,End_work_time
     def Get_Job_Shift_Time(self, machine,JM):

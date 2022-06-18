@@ -1,6 +1,3 @@
-from ast import Not
-from cgitb import reset
-import matplotlib.pyplot as plt
 from Jobs import Job
 from Machines import Machine_Time_window
 import numpy as np
@@ -78,7 +75,10 @@ class Decode:
             if M_Ealiest >= e:
                 efficent += 1
             else:
-                break
+                if self.Processing_time[Job][O_num][Machine][efficent] == -1: # 该时间段休息，不开工
+                    efficent += 1
+                else:
+                    break
         #efficent = min(efficent, len(self.Processing_time[Job][O_num][Machine]) - 1)
         P_t = self.Processing_time[Job][O_num][Machine][efficent] # 根据能效获取节拍
         End_work_time = M_Ealiest + P_t
@@ -121,24 +121,4 @@ class Decode:
             self.Machines[Machine]._Input(Job,Para[0],Para[2],Para[3])
         return self.fitness
  
-    def Gantt(self,Machines):
-        M = ['red', 'blue', 'yellow', 'orange', 'green', 'palegoldenrod', 'purple', 'pink', 'Thistle', 'Magenta',
-             'SlateBlue', 'RoyalBlue', 'Cyan', 'Aqua', 'floralwhite', 'ghostwhite', 'goldenrod', 'mediumslateblue',
-             'navajowhite',
-             'navy', 'sandybrown', 'moccasin']
-        for i in range(len(Machines)):
-            Machine=Machines[i]
-            Start_time=Machine.O_start
-            End_time=Machine.O_end
-            for i_1 in range(len(End_time)):
-                # plt.barh(i,width=End_time[i_1]-Start_time[i_1],height=0.8,left=Start_time[i_1],\
-                #          color=M[Machine.assigned_task[i_1][0]],edgecolor='black')
-                # plt.text(x=Start_time[i_1]+0.1,y=i,s=Machine.assigned_task[i_1])
-                plt.barh(i, width=End_time[i_1] - Start_time[i_1], height=0.8, left=Start_time[i_1], \
-                         color='white', edgecolor='black')
-                plt.text(x=Start_time[i_1] + (End_time[i_1] - Start_time[i_1])/2-0.5, y=i, s=Machine.assigned_task[i_1][0])
-        plt.yticks(np.arange(i + 1), np.arange(1, i + 2))
-        plt.title('Scheduling Gantt chart')
-        plt.ylabel('Machines')
-        plt.xlabel('Time')
-        plt.show()
+    

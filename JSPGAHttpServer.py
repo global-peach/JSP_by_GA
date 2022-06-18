@@ -1,10 +1,8 @@
-from xml.etree.ElementTree import tostring
 import tornado.ioloop
 import tornado.httpserver
 import tornado.web
 import json
 import JSPGA
-import matplotlib.pyplot as plt
 
 class MainHandler(tornado.web.RequestHandler):
     def post(self, *args, **kwargs):
@@ -13,7 +11,7 @@ class MainHandler(tornado.web.RequestHandler):
         post_data = self.request.body.decode('utf-8')
         post_data = json.loads(post_data)
         print('开始迭代计算最优排产')
-        g=JSPGA.GA()
+        g = JSPGA.GA()
         d = g.start(post_data.get('ProcessingTime'), post_data.get('ProcessingGroup'), post_data.get('MachineStartTime'), post_data.get('TimeEfficent'))[0]
         res = {}
         i = 0
@@ -36,7 +34,6 @@ def set_default_header(self):
 
 
 if __name__ == "__main__":
-    plt.switch_backend('agg')
     application = tornado.web.Application([(r"/ga", MainHandler), ])
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(5241)

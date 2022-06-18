@@ -1,11 +1,8 @@
-from dataclasses import asdict
-from unittest import result
 import numpy as np
 import random
 from Decode_for_JSP import Decode
 from Encode_for_JSP import Encode
 import itertools
-import matplotlib.pyplot as plt
  
 class GA:
     def __init__(self):
@@ -232,18 +229,4 @@ class GA:
         Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
         return d, Best_fit, Worst_fit, Avg_fit
  
-    def main(self,Processing_time, Processing_Group, Machine_start_time, Time_efficent):
-        d, Best_fit, Worst_fit, Avg_fit = self.start(Processing_time, Processing_Group, Machine_start_time, Time_efficent)
-        d.Gantt(d.Machines)
-        x = np.linspace(0, self.Max_Itertions, self.Max_Itertions)
-        plt.plot(x, Best_fit, x, Worst_fit, x, Avg_fit,'-k')
-        plt.title(
-            'Best, Worst, Average Scheduling time Each iterator')
-        plt.ylabel('Scheduling time')
-        plt.xlabel('Number of iterations')
-        plt.show()
- 
-if __name__=='__main__':
-    from test1 import Processing_time, Processing_Group, Machine_start_time, Time_efficent
-    g=GA()
-    g.main(Processing_time, Processing_Group, Machine_start_time, Time_efficent)
+    

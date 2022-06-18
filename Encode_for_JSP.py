@@ -135,9 +135,9 @@ class Encode:
             for gon in GJ_list:
                 Machine_time = np.zeros(self.M_num)  # 机器时间初始化
                 g = gon  # 随机选择工件集的第一个工件   #从工件集中剔除这个工件
-                h = np.array(self.Matrix[g])  # 第一个工件及其对应工序的加工时间
+                h = self.Matrix[g]  # 第一个工件及其对应工序的加工时间
                 for j in range(len(h)):  # 从工件的第一个工序开始选择机器
-                    D = np.array(h[j])
+                    D = h[j]
                     List_Machine_weizhi = []
                     Site=0
                     for k in range(len(D)):  # 每道工序可使用的机器以及机器的加工时间

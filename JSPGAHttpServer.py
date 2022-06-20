@@ -13,7 +13,7 @@ class MainHandler(tornado.web.RequestHandler):
         print('开始迭代计算最优排产')
         g = JSPGA.GA()
         d = g.start(post_data.get('ProcessingTime'), post_data.get('ProcessingGroup'), post_data.get('MachineStartTime'), post_data.get('TimeEfficent'))[0]
-        res = {}
+        res = []
         i = 0
         for Machine in d.Machines:
             mac = []
@@ -21,9 +21,13 @@ class MainHandler(tornado.web.RequestHandler):
             End_time=Machine.O_end
             for i_1 in range(len(End_time)):
                 mac.append({ "StartTime":int(Start_time[i_1]), "EndTime": int(End_time[i_1]), "Job": int(Machine.assigned_task[i_1][0] - 1)})
-            res[str(i)]= mac
+            res.append({
+                "WorkCenterIndex": i,
+                "WorkCenterData": mac
+            })
             i+=1
-        self.write(res)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(res))
         print('完成')
 
 def set_default_header(self):

@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from JSPGA import GA
 
 class JSPGAGraphPainter:
-    def main(self,Processing_time, Processing_Group, Machine_start_time, Time_efficent):
+    def main(self,Processing_time, Processing_Group, Machine_start_time, Time_efficent, Machine_buffer):
         ga = GA()
-        d, Best_fit, Worst_fit, Avg_fit = ga.start(Processing_time, Processing_Group, Machine_start_time, Time_efficent)
+        d, Best_fit, Worst_fit, Avg_fit = ga.start(Processing_time, Processing_Group, Machine_start_time, Time_efficent, Machine_buffer)
         self.Gantt(d.Machines)
         x = np.linspace(0, ga.Max_Itertions, ga.Max_Itertions)
         plt.plot(x, Best_fit, x, Worst_fit, x, Avg_fit,'-k')
@@ -38,6 +38,6 @@ class JSPGAGraphPainter:
         plt.show()
 
 if __name__=='__main__':
-    from test1 import Processing_time, Processing_Group, Machine_start_time, Time_efficent
+    from test1 import Processing_time, Processing_Group, Machine_start_time, Time_efficent, Machine_buffer
     painter = JSPGAGraphPainter()
-    painter.main(Processing_time, Processing_Group, Machine_start_time, Time_efficent)
+    painter.main(Processing_time, Processing_Group, Machine_start_time, Time_efficent, Machine_buffer)

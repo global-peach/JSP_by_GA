@@ -12,7 +12,8 @@ class MainHandler(tornado.web.RequestHandler):
         post_data = json.loads(post_data)
         print('开始迭代计算最优排产')
         g = JSPGA.GA()
-        d = g.start(post_data.get('ProcessingTime'), post_data.get('ProcessingGroup'), post_data.get('MachineStartTime'), post_data.get('TimeEfficent'))[0]
+        d = g.start(post_data.get('ProcessingTime'), post_data.get('ProcessingGroup'),
+        post_data.get('MachineStartTime'), post_data.get('TimeEfficent'), post_data.get('MachineBuffer'))[0]
         res = []
         i = 0
         for Machine in d.Machines:

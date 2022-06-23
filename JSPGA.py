@@ -14,10 +14,10 @@ class GA:
         self.Max_Itertions=10  #最大迭代次数
  
     #适应度
-    def fitness(self,CHS,J,Processing_time,M_num,Len, Machine_start_time, Time_efficent):
+    def fitness(self,CHS,J,Processing_time,M_num,Len, Machine_start_time, Time_efficent, Machine_buffer):
         Fit=[]
         for i in range(len(CHS)):
-            d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent)
+            d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent, Machine_buffer)
             Fit.append(d.Decode_1(CHS[i],Len))
         return Fit
  
@@ -161,7 +161,7 @@ class GA:
         idx = np.random.choice(np.arange(len(Fit_value)), size=len(Fit_value), replace=True, p=(Fit) / (Fit.sum()))
         return idx
 
-    def start(self, Processing_time, Processing_group, Machine_start_time, Time_efficent):
+    def start(self, Processing_time, Processing_group, Machine_start_time, Time_efficent, Machine_buffer):
         J = {}
         J_num = 0
         M_num = 0
@@ -182,7 +182,7 @@ class GA:
         Worst_fit = []
         Avg_fit = []
         for i in range(self.Max_Itertions):
-            Fit = self.fitness(C, J, Processing_time, M_num, Len_Chromo, Machine_start_time, Time_efficent)
+            Fit = self.fitness(C, J, Processing_time, M_num, Len_Chromo, Machine_start_time, Time_efficent, Machine_buffer)
             Best = C[Fit.index(min(Fit))]
             best_fitness = min(Fit)
             worst_fit = max(Fit)
@@ -222,10 +222,10 @@ class GA:
                 if offspring !=[]:
                     Fit = []
                     for i in range(len(offspring)):
-                        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent)
+                        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent, Machine_buffer)
                         Fit.append(d.Decode_1(offspring[i], Len_Chromo))
                     C[j] = offspring[Fit.index(min(Fit))]
-        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent)
+        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent, Machine_buffer)
         Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
         return d, Best_fit, Worst_fit, Avg_fit
  

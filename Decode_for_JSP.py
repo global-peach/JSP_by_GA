@@ -3,10 +3,11 @@ from Machines import Machine_Time_window
 import numpy as np
  
 class Decode:
-    def __init__(self,J,Processing_time,M_num, Machine_start_time, Time_efficent):
+    def __init__(self,J,Processing_time,M_num, Machine_start_time, Time_efficent, Machine_buffer):
         self.Processing_time = Processing_time
         self.Machine_start_time = Machine_start_time
         self.Time_efficent = Time_efficent
+        self.Machine_buffer = Machine_buffer
         self.Scheduled = []  # 已经排产过的工序
         self.M_num = M_num
         self.Machines = []  # 存储机器类
@@ -96,11 +97,22 @@ class Decode:
             if last_job.Operation_num > last_o:
                 #还有未完成的工序
                 next_o_machine = self.Machines[JM[last_task[0] - 1][last_task[1]]]
-                #由于下一个机器也会有加工的工件，而其流转时刻又受下下个机器影响，所以需要计算
-                next_machine_time = 0
-                if len(next_o_machine.assigned_task) > 0:
-                    next_machine_time = next_o_machine.O_start[next_o_machine.assigned_task.index([last_task[0], last_task[1] + 1])]
-                return max(machine.End_time, next_machine_time)
+                #判断下一个机器是否有buffer
+                if self.Machine_buffer is not None:
+                    index = -1
+                    for i in self.Machine_buffer:
+                        if i ==  next_o_machine.Machine_index:
+                            index = i
+                            break
+                    if index == -1:
+                        #由于下一个机器也会有加工的工件，而其流转时刻又受下下个机器影响，所以需要计算
+                        next_machine_time = 0
+                        if len(next_o_machine.assigned_task) > 0:
+                            next_machine_time = next_o_machine.O_start[next_o_machine.assigned_task.index([last_task[0], last_task[1] + 1])]
+                        return max(machine.End_time, next_machine_time)
+                    else:
+                        #下一个机器有buffer
+                        return machine.End_time
             else:
                 #工件所有工序加工完成，返回加工完成时间
                 return machine.End_time

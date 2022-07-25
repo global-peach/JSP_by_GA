@@ -78,6 +78,10 @@ class Decode:
             else:
                 if self.Processing_time[Job][O_num][Machine][efficent] == -1: # 该时间段休息，不开工
                     efficent += 1
+                    if efficent < len(self.Time_efficent):
+                        M_Ealiest = self.Time_efficent[efficent]
+                    else:
+                        raise Exception('检测到无法完成排产')
                 else:
                     break
         #efficent = min(efficent, len(self.Processing_time[Job][O_num][Machine]) - 1)

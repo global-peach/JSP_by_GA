@@ -69,24 +69,42 @@ class Decode:
         #             if M_Tstart[le_i] < last_O_end and M_Tend[le_i] - last_O_end >= P_t:
         #                 ealiest_start = last_O_end
         #                 break
-        M_Ealiest = ealiest_start
+        M_Ealiest = ealiest_start # 加工开始时间
+        End_work_time = M_Ealiest # 计算跳过休息时间的加工结束时间
+        rest_work = 1 # 剩余加工进度，初始100%
+        P_t = 0 # 总加工时间
         # P_t=self.Processing_time[Job][O_num][Machine]
-        efficent = -1 # 根据开始时间获取能效
-        for e in self.Time_efficent:
-            if M_Ealiest >= e:
-                efficent += 1
-            else:
-                if self.Processing_time[Job][O_num][Machine][efficent] == -1: # 该时间段休息，不开工
-                    efficent += 1
-                    if efficent < len(self.Time_efficent):
-                        M_Ealiest = self.Time_efficent[efficent]
-                    else:
-                        raise Exception('检测到无法完成排产')
+        for i in range(len(self.Time_efficent)):
+            start = self.Time_efficent[i] # 开始时间
+            end = 9999 # 结束时间
+            if i + 1 < len(self.Time_efficent):
+                end = self.Time_efficent[i + 1]
+            efficent = self.Processing_time[Job][O_num][Machine][i] # 根据能效获取节拍
+            if end < M_Ealiest:
+                continue
+            if start <= M_Ealiest and end > M_Ealiest:
+                # 找到了开工时间
+                if efficent == -1:
+                    # 最早开工时间落在了休息时间，往后顺延
+                    M_Ealiest = end
+                    End_work_time = end
+                    continue
+            if End_work_time < end:
+                if efficent == -1:
+                    # 休息时间，结束时间累加
+                    End_work_time = end
                 else:
-                    break
-        #efficent = min(efficent, len(self.Processing_time[Job][O_num][Machine]) - 1)
-        P_t = self.Processing_time[Job][O_num][Machine][efficent] # 根据能效获取节拍
-        End_work_time = M_Ealiest + P_t
+                    # 计算结束时间
+                    if end - End_work_time >= efficent * rest_work:
+                        # 时间段内能做完
+                        End_work_time += efficent * rest_work
+                        P_t += efficent * rest_work
+                        break
+                    else:
+                        # 不能做完，计算完成度
+                        rest_work -= (end - End_work_time) / efficent
+                        P_t += end - End_work_time
+                        End_work_time = end
         return M_Ealiest, Selected_Machine, P_t, O_num,last_O_end,End_work_time
     def Get_Job_Shift_Time(self, machine,JM):
         #也就是本机器上一个工件的下一道工序所在机器的开始时间(流转时刻)
@@ -134,7 +152,7 @@ class Decode:
             self.Jobs[Job]._Input(Para[0],Para[5],Para[1])
             if Para[5]>self.fitness:
                 self.fitness=Para[5]
-            self.Machines[Machine]._Input(Job,Para[0],Para[2],Para[3])
+            self.Machines[Machine]._Input(Job,Para[0],Para[5],Para[2],Para[3])
         return self.fitness
  
     

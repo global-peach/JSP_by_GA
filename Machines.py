@@ -5,6 +5,7 @@ class Machine_Time_window:
         self.worker_for_task=[]
         self.O_start = []
         self.O_end = []
+        self.O_processing = []
         self.End_time=0
  
     #机器的哪些时间窗是空的,此处只考虑内部封闭的时间窗
@@ -36,7 +37,7 @@ class Machine_Time_window:
             burden=sum(processing_time)
         return burden
  
-    def _Input(self,Job,M_Ealiest,P_t,O_num):
+    def _Input(self,Job,M_Ealiest,End_work_time,Processing_time,O_num):
         if self.O_end!=[]:
             if self.O_start[-1]>M_Ealiest:
                 for i in range(len(self.O_end)):
@@ -48,7 +49,6 @@ class Machine_Time_window:
         else:
             self.assigned_task.append([Job+1,O_num+1])
         self.O_start.append(M_Ealiest)
-        self.O_start.sort()
-        self.O_end.append(M_Ealiest+P_t)
-        self.O_end.sort()
+        self.O_end.append(End_work_time)
+        self.O_processing.append(Processing_time)
         self.End_time=self.O_end[-1]

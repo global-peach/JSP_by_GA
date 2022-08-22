@@ -9,19 +9,23 @@ class MainHandler(tornado.web.RequestHandler):
         set_default_header(self)
         # json
         post_data = self.request.body.decode('utf-8')
-        post_data = json.loads(post_data)
+        
+        def json2JSPGAInput(dict):
+            return JSPGA.JSPGAInput(dict)
+        inputParam = json.loads(s=post_data, object_hook=json2JSPGAInput)
         print('开始迭代计算最优排产')
         g = JSPGA.GA()
-        d = g.start(post_data.get('ProcessingTime'), post_data.get('ProcessingGroup'),
-        post_data.get('MachineStartTime'), post_data.get('TimeEfficent'), post_data.get('MachineBuffer'))[0]
+        result = g.start(inputParam)
         res = []
         i = 0
-        for Machine in d.Machines:
+        for Machine in result.Decode.Machines:
             mac = []
-            Start_time=Machine.O_start
-            End_time=Machine.O_end
+            Start_time = Machine.O_start
+            End_time = Machine.O_end
+            Processing_time = Machine.O_processing
             for i_1 in range(len(End_time)):
-                mac.append({ "StartTime":int(Start_time[i_1]), "EndTime": int(End_time[i_1]), "Job": int(Machine.assigned_task[i_1][0] - 1)})
+                mac.append({ "StartTime":int(Start_time[i_1]), "EndTime": int(End_time[i_1]),
+                "ProcessingTime": int(Processing_time[i_1]), "Job": int(Machine.assigned_task[i_1][0] - 1)})
             res.append({
                 "WorkCenterIndex": i,
                 "WorkCenterData": mac

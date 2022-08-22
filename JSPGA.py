@@ -3,7 +3,25 @@ import random
 from Decode_for_JSP import Decode
 from Encode_for_JSP import Encode
 import itertools
+
  
+class JSPGAInput:
+    def __init__(self, dict) -> None:
+        self.ProcessingTime = []
+        self.ProcessingGroup = []
+        self.MachineStartTime = []
+        self.TimeEfficent = []
+        self.MachineBuffer = []
+        self.Itertion = 10
+        self.__dict__.update(dict)
+
+class JSPGAResult:
+    def __init__(self, decode: Decode, best_fit: list, worst_fit: list, avg_fit: list) -> None:
+        self.Decode = decode
+        self.BestFit = best_fit
+        self.WorstFit = worst_fit
+        self.AvgFit = avg_fit
+
 class GA:
     def __init__(self):
         self.Pop_size=300       #种群数量
@@ -161,15 +179,16 @@ class GA:
         idx = np.random.choice(np.arange(len(Fit_value)), size=len(Fit_value), replace=True, p=(Fit) / (Fit.sum()))
         return idx
 
-    def start(self, Processing_time, Processing_group, Machine_start_time, Time_efficent, Machine_buffer):
+    def start(self, inputParam: JSPGAInput) -> JSPGAResult:
+        self.Max_Itertions = inputParam.Itertion
         J = {}
         J_num = 0
         M_num = 0
-        for a in Processing_time:
+        for a in inputParam.ProcessingTime:
             J_num += 1
             J[J_num] = len(a)
             M_num = len(a[0])
-        e = Encode(Processing_time, self.Pop_size, J, J_num, M_num, Processing_group)
+        e = Encode(inputParam.ProcessingTime, self.Pop_size, J, J_num, M_num, inputParam.ProcessingGroup)
         OS_List=e.OS_List()
         Len_Chromo=e.Len_Chromo
         CHS1=e.Global_initial()
@@ -182,7 +201,7 @@ class GA:
         Worst_fit = []
         Avg_fit = []
         for i in range(self.Max_Itertions):
-            Fit = self.fitness(C, J, Processing_time, M_num, Len_Chromo, Machine_start_time, Time_efficent, Machine_buffer)
+            Fit = self.fitness(C, J, inputParam.ProcessingTime, M_num, Len_Chromo, inputParam.MachineStartTime, inputParam.TimeEfficent, inputParam.MachineBuffer)
             Best = C[Fit.index(min(Fit))]
             best_fitness = min(Fit)
             worst_fit = max(Fit)
@@ -209,24 +228,25 @@ class GA:
                         Crossover=self.Crossover_Machine(C[j],C[N_i],Len_Chromo)
                         # print('Cov1----->>>>>',len(Crossover[0]),len(Crossover[1]))
                     else:
-                        Crossover=self.Crossover_Operation(C[j],C[N_i],Len_Chromo,J_num, Processing_group)
+                        Crossover=self.Crossover_Operation(C[j],C[N_i],Len_Chromo,J_num, inputParam.ProcessingGroup)
                     offspring.append(Crossover[0])
                     offspring.append(Crossover[1])
                     offspring.append(C[j])
                 if random.random()<self.P_m:
                     if random.random()<self.P_w:
-                        Mutation=self.Variation_Machine(C[j],Processing_time,Len_Chromo,J)
+                        Mutation=self.Variation_Machine(C[j],inputParam.ProcessingTime,Len_Chromo,J)
                     else:
-                        Mutation=self.Variation_Operation(C[j],Len_Chromo,J_num,J,Processing_time,M_num)
+                        Mutation=self.Variation_Operation(C[j],Len_Chromo,J_num,J,inputParam.ProcessingTime,M_num)
                     offspring.append(Mutation)
                 if offspring !=[]:
                     Fit = []
                     for i in range(len(offspring)):
-                        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent, Machine_buffer)
+                        d = Decode(J, inputParam.ProcessingTime, M_num, inputParam.MachineStartTime, inputParam.TimeEfficent, inputParam.MachineBuffer)
                         Fit.append(d.Decode_1(offspring[i], Len_Chromo))
                     C[j] = offspring[Fit.index(min(Fit))]
-        d = Decode(J, Processing_time, M_num, Machine_start_time, Time_efficent, Machine_buffer)
+        d = Decode(J, inputParam.ProcessingTime, M_num, inputParam.MachineStartTime, inputParam.TimeEfficent, inputParam.MachineBuffer)
+        if Optimal_CHS is int and Optimal_CHS == 0:
+            raise Exception('检测到无法完成排产')
         Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
-        return d, Best_fit, Worst_fit, Avg_fit
- 
-    
+        return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit)
+

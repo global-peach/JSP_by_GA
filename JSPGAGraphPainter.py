@@ -38,12 +38,7 @@ class JSPGAGraphPainter:
         plt.show()
 
 if __name__=='__main__':
-    from test1 import Processing_time, Processing_Group, Machine_start_time, Time_efficent, Machine_buffer
+    from test4 import input
     painter = JSPGAGraphPainter()
-    inputParam = JSPGA.JSPGAInput()
-    inputParam.ProcessingTime = Processing_time
-    inputParam.ProcessingGroup = Processing_Group
-    inputParam.MachineStartTime = Machine_start_time
-    inputParam.TimeEfficent = Time_efficent
-    inputParam.MachineBuffer = Machine_buffer
+    inputParam = JSPGA.JSPGAInput(input)
     painter.main(inputParam)

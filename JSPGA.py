@@ -67,6 +67,8 @@ class GA:
         Set2 = []
         if (Processing_group is not None and len(Processing_group) > 0):
             #工件组合（加工顺序必须固定）
+            if len(Processing_group) == 1 and len(Processing_group[0]) == J_num:
+                return CHS1, CHS2
             Job_list = [i for i in range(J_num)]
             random.shuffle(Job_list)
             tmp_group = []

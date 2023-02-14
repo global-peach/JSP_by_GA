@@ -13,7 +13,6 @@ class MainHandler(tornado.web.RequestHandler):
         def json2JSPGAInput(dict):
             return JSPGA.JSPGAInput(dict)
         inputParam = json.loads(s=post_data, object_hook=json2JSPGAInput)
-        print('开始迭代计算最优排产')
         g = JSPGA.GA()
         result = g.start(inputParam)
         res = []

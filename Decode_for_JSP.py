@@ -3,7 +3,7 @@ from Machines import Machine_Time_window
 import numpy as np
  
 class Decode:
-    def __init__(self,J,Processing_time,M_num, Machine_start_time, Time_efficent, Machine_buffer):
+    def __init__(self,J,Processing_time,M_num, Machine_start_time, Time_efficent, Machine_buffer, IsWorst):
         self.Processing_time = Processing_time
         self.Machine_start_time = Machine_start_time
         self.Time_efficent = Time_efficent
@@ -12,6 +12,7 @@ class Decode:
         self.M_num = M_num
         self.Machines = []  # 存储机器类
         self.fitness = 0
+        self.IsWorst = IsWorst
         self.J=J            #
         for j in range(M_num):
             self.Machines.append(Machine_Time_window(j))
@@ -153,6 +154,6 @@ class Decode:
             if Para[5]>self.fitness:
                 self.fitness=Para[5]
             self.Machines[Machine]._Input(Job,Para[0],Para[5],Para[2],Para[3])
-        return self.fitness
+        return self.fitness if self.IsWorst is False else 1 / self.fitness
  
     

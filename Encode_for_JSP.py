@@ -2,7 +2,7 @@ import numpy as np
 import random
  
 class Encode:
-    def __init__(self,Matrix,Pop_size,J,J_num,M_num, Processing_group):
+    def __init__(self,Matrix,Pop_size,J,J_num,M_num, Processing_group, Processing_weight):
         self.Matrix=Matrix      #工件各工序对应各机器加工时间矩阵
         self.GS_num=int(0.6*Pop_size)      #全局选择初始化
         self.LS_num=int(0.3*Pop_size)     #局部选择初始化
@@ -11,13 +11,14 @@ class Encode:
         self.J_num=J_num        #工件数
         self.M_num=M_num        #机器数
         self.Processing_group = Processing_group #工件分组
+        self.Processing_weight = Processing_weight
         self.CHS=[]
         self.Len_Chromo=0
         for i in J.values():
             self.Len_Chromo+=i
  
-    #生成工序准备的部分
-    def OS_List(self):
+    # 生成工序准备的部分
+    def OS_ListNew(self):
         tmp = []
         for i in range(len(self.J)):
             tmp.append(i)
@@ -44,6 +45,13 @@ class Encode:
             for o in range(O_num):
                 OS_list.append(i)
         return OS_list
+    #生成工序准备的部分
+    def OS_List(self):
+        OS_list=[]
+        for k,v in self.J.items():
+            OS_add=[k-1 for j in range(v)]
+            OS_list.extend(OS_add)
+        return OS_list
  
     #生成初始化矩阵
     def CHS_Matrix(self, C_num):  # C_num:所需列数
@@ -61,11 +69,14 @@ class Encode:
     #全局选择初始化
     def Global_initial(self):
         MS=self.CHS_Matrix(self.GS_num)
-        OS_list= self.OS_List() # 生成工序排序部分
+        OS_list= self.OS_ListNew() # 生成工序排序部分
         OS=self.CHS_Matrix(self.GS_num)
+        WS=np.zeros([self.GS_num, self.J_num], dtype=int)
+        WS_list = self.WS_List()
         for i in range(self.GS_num):
             Machine_time = np.zeros(self.M_num, dtype=float)  # 机器时间初始化
             OS[i] = np.array(OS_list)
+            WS[i] = np.array(WS_list)
             GJ_list = [i_1 for i_1 in range(self.J_num)]
             random.shuffle(GJ_list)
             for g in GJ_list:  # 随机选择工件集的第一个工件,从工件集中剔除这个工件
@@ -87,19 +98,22 @@ class Encode:
                     Machine_time[I] = Min_time
                     site=self.Site(g,j)
                     MS[i][site] = K
-        CHS1 = np.hstack((MS, OS))
+        CHS1 = np.hstack((MS, OS, WS))
         return CHS1
  
  
     #局部选择初始化
     def Local_initial(self):
         MS = self.CHS_Matrix(self.LS_num)
-        OS_list = self.OS_List()# 生成工序排序部分
+        OS_list = self.OS_ListNew()# 生成工序排序部分
         OS = self.CHS_Matrix(self.LS_num)
+        WS=np.zeros([self.LS_num, self.J_num], dtype=int)
+        WS_list = self.WS_List()
         for i in range(self.LS_num):
             (OS_list)  
             OS_gongxu = OS_list
             OS[i] = np.array(OS_gongxu)
+            WS[i] = np.array(WS_list)
             GJ_list = [i_1 for i_1 in range(self.J_num)]
             for g in GJ_list:
                 Machine_time = np.zeros(self.M_num)  # 机器时间初始化
@@ -120,15 +134,18 @@ class Encode:
                     Machine_Index_add = Machine_Select.index(min(Machine_Select))
                     site = self.Site(g, j)
                     MS[i][site] = MS[i][site] + Machine_Index_add
-        CHS1 = np.hstack((MS, OS))
+        CHS1 = np.hstack((MS, OS, WS))
         return CHS1
  
     def Random_initial(self):
         MS = self.CHS_Matrix(self.RS_num)
-        OS_list = self.OS_List()# 生成工序排序部分
+        OS_list = self.OS_ListNew()# 生成工序排序部分
         OS = self.CHS_Matrix(self.RS_num)
+        WS=np.zeros([self.RS_num, self.J_num], dtype=int)
+        WS_list = self.WS_List_random() #生产标定砝码部分
         for i in range(self.RS_num):
             OS_gongxu = OS_list
+            WS[i] = np.array(WS_list)
             OS[i] = np.array(OS_gongxu)
             GJ_list = [i_1 for i_1 in range(self.J_num)]
             A = 0
@@ -149,5 +166,19 @@ class Encode:
                     Machine_Index_add = random.choice(List_Machine_weizhi)
                     MS[i][A] = MS[i][A] + Machine_Index_add
                     A += 1
-        CHS1 = np.hstack((MS, OS))
+        CHS1 = np.hstack((MS, OS, WS))
         return CHS1
+    #平均分配标定使用的砝码
+    def WS_List(self):
+        WS_list=[]
+        ProcessingWeight = self.Processing_weight
+        for i in range(len(ProcessingWeight)):
+            WS_list.append(random.randint(0, len(ProcessingWeight[i]) - 1))
+        return WS_list
+    # 随机选择标定使用的砝码
+    def WS_List_random(self):
+        WS_list=[]
+        ProcessingWeight = self.Processing_weight
+        for i in range(len(ProcessingWeight)):
+            WS_list.append(random.randint(0, len(ProcessingWeight[i]) - 1))
+        return WS_list

@@ -4,17 +4,8 @@ from Decode_for_JSP import Decode
 from Encode_for_JSP import Encode
 import itertools
 
- 
-class JSPGAInput:
-    def __init__(self, dict) -> None:
-        self.ProcessingTime = []
-        self.ProcessingGroup = []
-        self.MachineStartTime = []
-        self.TimeEfficent = []
-        self.MachineBuffer = []
-        self.Itertion = 10
-        self.IsWorst = False
-        self.__dict__.update(dict)
+from model import HFSPGAInput
+
 
 class JSPGAResult:
     def __init__(self, decode: Decode, best_fit: list, worst_fit: list, avg_fit: list) -> None:
@@ -25,23 +16,23 @@ class JSPGAResult:
 
 class GA:
     def __init__(self):
-        self.Pop_size=300       #种群数量
+        self.Pop_size=1000       #种群数量
         self.P_c=0.8            #交叉概率
-        self.P_m=0.1            #变异概率
-        self.P_v=0.1            #选择何种方式进行交叉
-        self.P_w=0.0            #采用何种方式进行变异
-        self.Max_Itertions=10  #最大迭代次数
+        self.P_m=0.05            #变异概率
+        self.P_v=0.5           #选择何种方式进行交叉
+        self.P_w=0.95            #采用何种方式进行变异
+        self.Max_Itertions=50  #最大迭代次数
  
     #适应度
-    def fitness(self,CHS,J,JSPGAInput: JSPGAInput,M_num,Len):
+    def fitness(self,CHS,J,GAInput: HFSPGAInput,M_num,Len):
         Fit=[]
         for i in range(len(CHS)):
-            d = Decode(J, JSPGAInput.ProcessingTime, M_num, JSPGAInput.MachineStartTime, JSPGAInput.TimeEfficent, JSPGAInput.MachineBuffer, JSPGAInput.IsWorst)
+            d = Decode(J, GAInput, M_num)
             Fit.append(d.Decode_1(CHS[i],Len))
         return Fit
  
     #机器部分交叉
-    def Crossover_Machine(self,CHS1,CHS2,T0):
+    def Crossover_Machine(self,CHS1,CHS2,T0,J_num):
         T_r=[j for j in range(T0)]
         r = random.randint(1, 10)  # 在区间[1,T0]内产生一个整数r
         random.shuffle(T_r)
@@ -51,11 +42,13 @@ class GA:
         OS_2 = CHS2[T0:2 * T0]
         C_1 = CHS2[0:T0]
         C_2 = CHS1[0:T0]
+        W_1 = CHS1[2*T0:2*T0 + J_num]
+        W_2 = CHS2[2*T0:2*T0 + J_num]
         for i in R:
             K,K_2 = C_1[i],C_2[i]
             C_1[i],C_2[i] = K_2,K
-        CHS1=np.hstack((C_1,OS_1))
-        CHS2 = np.hstack((C_2, OS_2))
+        CHS1=np.hstack((C_1,OS_1, W_1))
+        CHS2 = np.hstack((C_2, OS_2, W_2))
         return CHS1,CHS2
  
     #工序交叉部分
@@ -64,6 +57,8 @@ class GA:
         OS_2 = CHS2[T0:2 * T0]
         MS_1 =CHS1[0:T0]
         MS_2 = CHS2[0:T0]
+        W_1 = CHS1[2*T0:2*T0 + J_num]
+        W_2 = CHS2[2*T0:2*T0 + J_num]
         Set1 = []
         Set2 = []
         if (Processing_group is not None and len(Processing_group) > 0):
@@ -106,8 +101,27 @@ class GA:
                 new_os1.append(i)
             if i not in Set2:
                 new_os2.append(i)
-        CHS1=np.hstack((MS_1,new_os1))
-        CHS2 = np.hstack((MS_2, new_os2))
+        CHS1=np.hstack((MS_1,new_os1, W_1))
+        CHS2 = np.hstack((MS_2, new_os2, W_2))
+        return CHS1,CHS2
+    #砝码交叉
+    def Crossover_Weight(self, CHS1, CHS2, T0, J_num):
+        T_r=[j for j in range(J_num)]
+        r = random.randint(1, 10 if J_num > 10 else J_num)  # 在区间[1,T0]内产生一个整数r
+        random.shuffle(T_r)
+        R = T_r[0:r]  # 按照随机数r产生r个互不相等的整数
+        # 将父代的染色体复制到子代中去，保持他们的顺序和位置
+        OS_1=CHS1[T0:2*T0]
+        OS_2 = CHS2[T0:2 * T0]
+        C_1 = CHS2[0:T0]
+        C_2 = CHS1[0:T0]
+        W_1 = CHS1[2*T0:2*T0 + J_num]
+        W_2 = CHS2[2*T0:2*T0 + J_num]
+        for i in R:
+            K,K_2 = W_1[i],W_2[i]
+            W_1[i],W_2[i] = K_2,K
+        CHS1=np.hstack((C_1,OS_1, W_1))
+        CHS2 = np.hstack((C_2, OS_2, W_2))
         return CHS1,CHS2
  
     def reduction(self,num,J,T0):
@@ -125,10 +139,11 @@ class GA:
         return Job,O_num
  
     #机器变异部分
-    def Variation_Machine(self,CHS,O,T0,J):
+    def Variation_Machine(self,CHS,O,T0,J, J_num):
         Tr=[i_num for i_num in range(T0)]
         MS=CHS[0:T0]
         OS=CHS[T0:2*T0]
+        WS=CHS[2*T0:2*T0 + J_num]
         # 机器选择部分
         r = random.randint(1, T0 - 1)  # 在变异染色体中选择r个位置
         random.shuffle(Tr)
@@ -142,16 +157,18 @@ class GA:
             for j in Machine_using:
                 if j is not None and len(j) > 0:
                     Machine_time.append(j)
-            Min_index = Machine_time.index(min(min(Machine_time)))
+            Min_index = Machine_time.index(min(Machine_time))
             MS[i] = Min_index
-        CHS=np.hstack((MS,OS))
+        CHS=np.hstack((MS,OS,WS))
         return CHS
     #工序变异部分
-    def Variation_Operation(self, CHS,T0,J_num,J,Processing_time,M_num):
-        return CHS  #暂不进行工序变异
+    def Variation_Operation(self, CHS,T0,J_num,J,GAInput: HFSPGAInput,M_num):
         MS=CHS[0:T0]
         OS=list(CHS[T0:2*T0])
+        WS=CHS[2*T0:2*T0 + J_num]
         r=random.randint(1,J_num-1)
+        if r > 5:   #防止阶乘爆炸
+            r = 5
         Tr=[i for i in range(J_num)]
         random.shuffle(Tr)
         Tr=Tr[0:r]
@@ -165,14 +182,36 @@ class GA:
         for i in range(len(A)):
             for j in range(len(A[i])):
                 OS[Site[j]]=A[i][j]
-            C_I=np.hstack((MS,OS))
+            C_I=np.hstack((MS,OS,WS))
             A_CHS.append(C_I)
         Fit = []
         for i in range(len(A_CHS)):
-            d = Decode(J, Processing_time, M_num)
+            d = Decode(J, GAInput, M_num)
             Fit.append(d.Decode_1(CHS, T0))
         return A_CHS[Fit.index(min(Fit))]
- 
+    #砝码变异
+    def Variation_Weight(self, CHS,T0,J_num,J,GAInput: HFSPGAInput, M_num):
+        MS=CHS[0:T0]
+        OS=list(CHS[T0:2*T0])
+        WS=CHS[2*T0:2*T0 + J_num]
+        randomNum: list[int] = []
+        A_CHS=[]
+        for i in range(len(GAInput.ProcessingWeight)):
+            if len(GAInput.ProcessingWeight[i]) > 1:
+                randomNum.append(i)
+        if len(randomNum) == 0:
+            return CHS
+        JobIndex = random.choice(randomNum)
+        for i in range(len(GAInput.ProcessingWeight[JobIndex])):
+            WS[JobIndex] = i
+            C_I=np.hstack((MS,OS,WS))
+            A_CHS.append(C_I)
+        Fit=[]
+        for i in range(len(A_CHS)):
+            d = Decode(J, GAInput, M_num)
+            Fit.append(d.Decode_1(CHS, T0))
+        return A_CHS[Fit.index(min(Fit))]
+    
     def Select(self,Fit_value):
         Fit=[]
         for i in range(len(Fit_value)):
@@ -182,7 +221,7 @@ class GA:
         idx = np.random.choice(np.arange(len(Fit_value)), size=len(Fit_value), replace=True, p=(Fit) / (Fit.sum()))
         return idx
 
-    def start(self, inputParam: JSPGAInput) -> JSPGAResult:
+    def start(self, inputParam: HFSPGAInput) -> JSPGAResult:
         print('开始迭代计算' + ('最优' if inputParam.IsWorst is False else '最差') + '排产')
         self.Max_Itertions = inputParam.Itertion
         J = {}
@@ -192,7 +231,7 @@ class GA:
             J_num += 1
             J[J_num] = len(a)
             M_num = len(a[0])
-        e = Encode(inputParam.ProcessingTime, self.Pop_size, J, J_num, M_num, inputParam.ProcessingGroup)
+        e = Encode(inputParam.ProcessingTime, self.Pop_size, J, J_num, M_num, inputParam.ProcessingGroup, inputParam.ProcessingWeight)
         OS_List=e.OS_List()
         Len_Chromo=e.Len_Chromo
         CHS1=e.Global_initial()
@@ -210,6 +249,7 @@ class GA:
             best_fitness = np.min(Fit)
             worst_fit = np.max(Fit) if inputParam.IsWorst is False else 1/np.max(Fit)
             avg_fit = np.average(Fit) if inputParam.IsWorst is False else np.average(np.reciprocal(Fit))
+            print('第{0}轮迭代  best_fitness:{1} worst_fit:{2} avg_fit:{3}'.format(i + 1, best_fitness, worst_fit, avg_fit))
             Worst_fit.append(worst_fit)
             Avg_fit.append(avg_fit)
             # d = Decode(J, Processing_time, M_num)
@@ -229,28 +269,30 @@ class GA:
                 if random.random()<self.P_c:
                     N_i = random.choice(np.arange(len(C)))
                     if random.random()<self.P_v:
-                        Crossover=self.Crossover_Machine(C[j],C[N_i],Len_Chromo)
+                        Crossover=self.Crossover_Machine(C[j],C[N_i],Len_Chromo, J_num)
                         # print('Cov1----->>>>>',len(Crossover[0]),len(Crossover[1]))
                     else:
                         Crossover=self.Crossover_Operation(C[j],C[N_i],Len_Chromo,J_num, inputParam.ProcessingGroup)
+                    Crossover = self.Crossover_Weight(Crossover[0], Crossover[1], Len_Chromo, J_num)
                     offspring.append(Crossover[0])
                     offspring.append(Crossover[1])
                     offspring.append(C[j])
                 if random.random()<self.P_m:
                     if random.random()<self.P_w:
-                        Mutation=self.Variation_Machine(C[j],inputParam.ProcessingTime,Len_Chromo,J)
+                        Mutation=self.Variation_Machine(C[j],inputParam.ProcessingTime,Len_Chromo,J, J_num)
                     else:
-                        Mutation=self.Variation_Operation(C[j],Len_Chromo,J_num,J,inputParam.ProcessingTime,M_num)
+                        Mutation=self.Variation_Operation(C[j],Len_Chromo,J_num,J,inputParam,M_num)
+                    Mutation = self.Variation_Weight(Mutation,Len_Chromo,J_num,J,inputParam, M_num)
                     offspring.append(Mutation)
                 if offspring !=[]:
                     Fit = []
                     for i in range(len(offspring)):
-                        d = Decode(J, inputParam.ProcessingTime, M_num, inputParam.MachineStartTime, inputParam.TimeEfficent, inputParam.MachineBuffer, inputParam.IsWorst)
+                        d = Decode(J, inputParam, M_num)
                         Fit.append(d.Decode_1(offspring[i], Len_Chromo))
                     C[j] = offspring[Fit.index(min(Fit))]
-        d = Decode(J, inputParam.ProcessingTime, M_num, inputParam.MachineStartTime, inputParam.TimeEfficent, inputParam.MachineBuffer, inputParam.IsWorst)
+        d = Decode(J, inputParam, M_num)
         if Optimal_CHS is int and Optimal_CHS == 0:
-            raise Exception('检测到无法完成排产')
+            raise Exception('无法完成排产')
         Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
         return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit)
 

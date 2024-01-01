@@ -8,7 +8,7 @@ class Job:
         self.J_end=[]
         self.J_machine=[]
         self.J_worker=[]
-        self.Last_Processing_Machine=None
+        self.Last_Processing_Machine=-1
  
     def Current_Processed(self):
         return len(self.Processed)

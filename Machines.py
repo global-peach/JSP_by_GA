@@ -1,10 +1,10 @@
 class Machine_Time_window:
     def __init__(self,Machine_index):
         self.Machine_index=Machine_index
-        self.assigned_task = []
-        self.worker_for_task=[]
-        self.O_start = []
-        self.O_end = []
+        self.assigned_task: list[list[int]] = []
+        self.worker_for_task:list[str]=[]
+        self.O_start:list[int] = []
+        self.O_end:list[int] = []
         self.O_processing = []
         self.End_time=0
  
@@ -37,7 +37,7 @@ class Machine_Time_window:
             burden=sum(processing_time)
         return burden
  
-    def _Input(self,Job,M_Ealiest,End_work_time,Processing_time,O_num):
+    def _Input(self,Job,M_Ealiest,End_work_time,Processing_time,O_num, worker):
         if self.O_end!=[]:
             if self.O_start[-1]>M_Ealiest:
                 for i in range(len(self.O_end)):
@@ -52,3 +52,4 @@ class Machine_Time_window:
         self.O_end.append(End_work_time)
         self.O_processing.append(Processing_time)
         self.End_time=self.O_end[-1]
+        self.worker_for_task.append(worker)

@@ -8,7 +8,7 @@ from model import HFSPGAInput
 class JSPGAGraphPainter:
     def main(self,inputParam: HFSPGAInput):
         ga = JSPGA.GA()
-        inputParam.Itertion = 50
+        inputParam.Itertion = 5
         result = ga.start(inputParam)
         self.Gantt(result.Decode.Machines, inputParam)
         x = np.linspace(0, ga.Max_Itertions, ga.Max_Itertions)

@@ -8,20 +8,22 @@ from model import HFSPGAInput
 
 
 class JSPGAResult:
-    def __init__(self, decode: Decode, best_fit: list, worst_fit: list, avg_fit: list) -> None:
+    def __init__(self, decode: Decode, best_fit: list, worst_fit: list, avg_fit: list, Optimal_CHS: list, Len_Chromo: int) -> None:
         self.Decode = decode
         self.BestFit = best_fit
         self.WorstFit = worst_fit
         self.AvgFit = avg_fit
+        self.OptimalCHS = Optimal_CHS
+        self.LenChromo = Len_Chromo
 
 class GA:
     def __init__(self):
-        self.Pop_size=1000       #种群数量
+        self.Pop_size=300       #种群数量
         self.P_c=0.8            #交叉概率
         self.P_m=0.05            #变异概率
         self.P_v=0.5           #选择何种方式进行交叉
         self.P_w=0.95            #采用何种方式进行变异
-        self.Max_Itertions=50  #最大迭代次数
+        self.Max_Itertions=100  #最大迭代次数
  
     #适应度
     def fitness(self,CHS,J,GAInput: HFSPGAInput,M_num,Len):
@@ -223,7 +225,6 @@ class GA:
 
     def start(self, inputParam: HFSPGAInput) -> JSPGAResult:
         print('开始迭代计算' + ('最优' if inputParam.IsWorst is False else '最差') + '排产')
-        self.Max_Itertions = inputParam.Itertion
         J = {}
         J_num = 0
         M_num = 0
@@ -243,13 +244,16 @@ class GA:
         Best_fit=[]
         Worst_fit = []
         Avg_fit = []
-        for i in range(self.Max_Itertions):
+        i = 0
+        count = 0
+        while True:
+            i += 1
             Fit = self.fitness(C, J, inputParam, M_num, Len_Chromo)
             Best = C[Fit.index(min(Fit))]
             best_fitness = np.min(Fit)
             worst_fit = np.max(Fit) if inputParam.IsWorst is False else 1/np.max(Fit)
             avg_fit = np.average(Fit) if inputParam.IsWorst is False else np.average(np.reciprocal(Fit))
-            print('第{0}轮迭代  best_fitness:{1} worst_fit:{2} avg_fit:{3}'.format(i + 1, best_fitness, worst_fit, avg_fit))
+            print('第{0}轮迭代  best_fitness:{1} worst_fit:{2} avg_fit:{3}'.format(i, best_fitness, worst_fit, avg_fit))
             Worst_fit.append(worst_fit)
             Avg_fit.append(avg_fit)
             # d = Decode(J, Processing_time, M_num)
@@ -257,12 +261,16 @@ class GA:
             # Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
             # d.Gantt(d.Machines)
             if best_fitness < Optimal_fit:
+                count = 0
                 Optimal_fit = best_fitness
                 Optimal_CHS = Best
                 Best_fit.append(Optimal_fit if inputParam.IsWorst is False else 1/Optimal_fit)
                 print('best_fitness' if inputParam.IsWorst is False else 'worst_fitness', best_fitness if inputParam.IsWorst is False else  1 / best_fitness)
             else:
                 Best_fit.append(Optimal_fit if inputParam.IsWorst is False else 1/Optimal_fit)
+                count += 1
+                if count > J_num or i > self.Max_Itertions:
+                    break
             Select = self.Select(Fit)
             for j in range(len(C)):
                 offspring = []
@@ -286,13 +294,13 @@ class GA:
                     offspring.append(Mutation)
                 if offspring !=[]:
                     Fit = []
-                    for i in range(len(offspring)):
+                    for k in range(len(offspring)):
                         d = Decode(J, inputParam, M_num)
-                        Fit.append(d.Decode_1(offspring[i], Len_Chromo))
+                        Fit.append(d.Decode_1(offspring[k], Len_Chromo))
                     C[j] = offspring[Fit.index(min(Fit))]
         d = Decode(J, inputParam, M_num)
         if Optimal_CHS is int and Optimal_CHS == 0:
             raise Exception('无法完成排产')
-        Fit.append(d.Decode_1(Optimal_CHS, Len_Chromo))
-        return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit)
+        d.Decode_1(Optimal_CHS, Len_Chromo)
+        return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit, Optimal_CHS, Len_Chromo)
 

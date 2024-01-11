@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import font_manager
+from Decode_for_JSP import Decode
 import JSPGA
 from Machines import Machine_Time_window
 from model import HFSPGAInput
@@ -8,13 +8,16 @@ from model import HFSPGAInput
 class JSPGAGraphPainter:
     def main(self,inputParam: HFSPGAInput):
         ga = JSPGA.GA()
-        inputParam.Itertion = 5
         result = ga.start(inputParam)
         self.Gantt(result.Decode.Machines, inputParam)
-        x = np.linspace(0, ga.Max_Itertions, ga.Max_Itertions)
+
+        d = Decode(result.Decode.J, inputParam, result.Decode.M_num)
+        d.Decode_1(result.OptimalCHS, result.LenChromo)
+
+        x = np.linspace(0, len(result.BestFit), len(result.BestFit))
+        plt.rcParams['font.sans-serif']=['Microsoft YaHei']
         plt.plot(x, result.BestFit, x, result.WorstFit, x, result.AvgFit,'-k')
-        plt.title(
-            'Best, Worst, Average Scheduling time Each iterator')
+        plt.title('Best, Worst, Average Scheduling time Each iterator')
         plt.ylabel('Scheduling time')
         plt.xlabel('Number of iterations')
         plt.show()
@@ -49,7 +52,7 @@ class JSPGAGraphPainter:
         plt.show()
 
 if __name__=='__main__':
-    from test1213 import input
+    from TotalByWeight1213 import input
     painter = JSPGAGraphPainter()
     inputParam = JSPGA.HFSPGAInput(input)
     painter.main(inputParam)

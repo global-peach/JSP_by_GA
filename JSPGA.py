@@ -1,3 +1,4 @@
+from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 import numpy as np
 import random
 from Decode_for_JSP import Decode
@@ -18,19 +19,29 @@ class JSPGAResult:
 
 class GA:
     def __init__(self):
-        self.Pop_size=300       #种群数量
+        self.Pop_size=100       #种群数量
         self.P_c=0.8            #交叉概率
-        self.P_m=0.05            #变异概率
+        self.P_m=0.5            #变异概率
         self.P_v=0.5           #选择何种方式进行交叉
         self.P_w=0.95            #采用何种方式进行变异
-        self.Max_Itertions=100  #最大迭代次数
- 
+        self.Max_Itertions=200  #最大迭代次数
+        self.executor=ThreadPoolExecutor(max_workers=20)
+
+    def calcFitness(self, J, GAInput, M_num, CHS, Len):
+        d = Decode(J, GAInput, M_num)
+        return d.Decode_1(CHS,Len)
+
     #适应度
-    def fitness(self,CHS,J,GAInput: HFSPGAInput,M_num,Len):
+    def fitness(self, CHS,J,GAInput: HFSPGAInput,M_num,Len):
         Fit=[]
+        futures: list[Future] = []
         for i in range(len(CHS)):
-            d = Decode(J, GAInput, M_num)
-            Fit.append(d.Decode_1(CHS[i],Len))
+            Fit.append(9999)
+            future=self.executor.submit(self.calcFitness, J, GAInput, M_num, CHS[i], Len)
+            futures.append(future)
+        #wait(futures, return_when=ALL_COMPLETED)
+        for i in range(len(futures)):
+            Fit[i] = futures[i].result()
         return Fit
  
     #机器部分交叉
@@ -186,10 +197,7 @@ class GA:
                 OS[Site[j]]=A[i][j]
             C_I=np.hstack((MS,OS,WS))
             A_CHS.append(C_I)
-        Fit = []
-        for i in range(len(A_CHS)):
-            d = Decode(J, GAInput, M_num)
-            Fit.append(d.Decode_1(CHS, T0))
+        Fit= self.fitness(A_CHS, J, GAInput, M_num, T0)
         return A_CHS[Fit.index(min(Fit))]
     #砝码变异
     def Variation_Weight(self, CHS,T0,J_num,J,GAInput: HFSPGAInput, M_num):
@@ -203,15 +211,16 @@ class GA:
                 randomNum.append(i)
         if len(randomNum) == 0:
             return CHS
-        JobIndex = random.choice(randomNum)
-        for i in range(len(GAInput.ProcessingWeight[JobIndex])):
-            WS[JobIndex] = i
-            C_I=np.hstack((MS,OS,WS))
-            A_CHS.append(C_I)
-        Fit=[]
-        for i in range(len(A_CHS)):
-            d = Decode(J, GAInput, M_num)
-            Fit.append(d.Decode_1(CHS, T0))
+        count = 0
+        while len(randomNum) > 0 and count < 8:
+            JobIndex = random.choice(randomNum)
+            randomNum.remove(JobIndex)
+            count += 1
+            for i in range(len(GAInput.ProcessingWeight[JobIndex])):
+                WS[JobIndex] = i
+                C_I=np.hstack((MS,OS,WS))
+                A_CHS.append(C_I)
+        Fit= self.fitness(A_CHS, J, GAInput, M_num, T0)
         return A_CHS[Fit.index(min(Fit))]
     
     def Select(self,Fit_value):
@@ -263,7 +272,7 @@ class GA:
             if best_fitness < Optimal_fit:
                 count = 0
                 Optimal_fit = best_fitness
-                Optimal_CHS = Best
+                Optimal_CHS = Best.copy()
                 Best_fit.append(Optimal_fit if inputParam.IsWorst is False else 1/Optimal_fit)
                 print('best_fitness' if inputParam.IsWorst is False else 'worst_fitness', best_fitness if inputParam.IsWorst is False else  1 / best_fitness)
             else:
@@ -292,11 +301,8 @@ class GA:
                         Mutation=self.Variation_Operation(C[j],Len_Chromo,J_num,J,inputParam,M_num)
                     Mutation = self.Variation_Weight(Mutation,Len_Chromo,J_num,J,inputParam, M_num)
                     offspring.append(Mutation)
-                if offspring !=[]:
-                    Fit = []
-                    for k in range(len(offspring)):
-                        d = Decode(J, inputParam, M_num)
-                        Fit.append(d.Decode_1(offspring[k], Len_Chromo))
+                if len(offspring) > 0:
+                    Fit = self.fitness(offspring, J, inputParam, M_num, Len_Chromo)
                     C[j] = offspring[Fit.index(min(Fit))]
         d = Decode(J, inputParam, M_num)
         if Optimal_CHS is int and Optimal_CHS == 0:

@@ -16,7 +16,8 @@ class HFSPGAInput:
         self.ProcessingGroup = []
         self.MachineStartTime = []
         self.ProcessingWeight: list[list[str]] = []
-        self.ProcessingNameList = []
+        self.JobNameList = []
+        self.ProcessNameList = []
         self.WorkStationNameList = []
         self.ResourceConfig: object = {}
         self.TimeEfficent = []

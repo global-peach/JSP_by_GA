@@ -112,8 +112,8 @@ class Decode:
             weight = WS[i]
             Para=self.Earliest_Start(Job, O_num, Machine, JM, weight)
             self.Jobs[Job]._Input(Para[0],Para[5],Para[1])
-            if Para[5]>self.fitness:
-                self.fitness=Para[5]
+            if Para[5] > self.fitness:
+                self.fitness = Para[5]
             self.Machines[Para[1]]._Input(Job, Para[0], Para[5], Para[2], Para[3], weight)
         return self.fitness if self.IsWorst is False else 1 / self.fitness
     #根据工序开始时间计算结束时间
@@ -182,9 +182,9 @@ class Decode:
         if last_job.Operation_num > last_o + 1:
             #还有未完成的工序
             next_o_machine_index = JM[last_task[0] - 1][last_task[1]]
-            if last_o == 1 or last_o == 3: #下一道是装配2、接线
+            if last_o == 2 or last_o == 4: #下一道是装配2、接线
                 next_o_machine_index = last_job.J_machine[0] #在装配1工位进行
-            elif last_o == 5: #下一道包装工序
+            elif last_o == 6: #下一道包装工序
                 next_o_machine_index = last_job.J_machine[5] + 2 #所在标定工位+2即为包装工位
             next_o_machine = self.Machines[next_o_machine_index]
             #判断下一个机器是否有buffer

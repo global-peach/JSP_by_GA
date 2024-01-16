@@ -9,13 +9,14 @@ from model import HFSPGAInput
 
 
 class JSPGAResult:
-    def __init__(self, decode: Decode, best_fit: list, worst_fit: list, avg_fit: list, Optimal_CHS: list, Len_Chromo: int) -> None:
+    def __init__(self, decode: Decode, best_fit: list, worst_fit: list, avg_fit: list, Optimal_CHS: list, Len_Chromo: int, CHS) -> None:
         self.Decode = decode
         self.BestFit = best_fit
         self.WorstFit = worst_fit
         self.AvgFit = avg_fit
         self.OptimalCHS = Optimal_CHS
         self.LenChromo = Len_Chromo
+        self.CHS = CHS
 
 class GA:
     def __init__(self):
@@ -24,7 +25,7 @@ class GA:
         self.P_m=0.5            #变异概率
         self.P_v=0.5           #选择何种方式进行交叉
         self.P_w=0.95            #采用何种方式进行变异
-        self.Max_Itertions=200  #最大迭代次数
+        self.Max_Itertions=100  #最大迭代次数
         self.executor=ThreadPoolExecutor(max_workers=20)
 
     def calcFitness(self, J, GAInput, M_num, CHS, Len):
@@ -308,5 +309,5 @@ class GA:
         if Optimal_CHS is int and Optimal_CHS == 0:
             raise Exception('无法完成排产')
         d.Decode_1(Optimal_CHS, Len_Chromo)
-        return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit, Optimal_CHS, Len_Chromo)
+        return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit, Optimal_CHS, Len_Chromo, C)
 

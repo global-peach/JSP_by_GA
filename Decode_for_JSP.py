@@ -74,15 +74,17 @@ class Decode:
             if ealiest_start < m_start:
                 ealiest_start = m_start
             if m_start <= ealiest_start and ealiest_start < m_end:
-                #生产资源需求：
-                #C1~C4工位多工人少，进入工位后，需要判断是否有空余的工人进行加工，如没有，则需要等待
-                if Selected_Machine < 4:
-                    Para = self.Get_C_Time(ealiest_start, Selected_Machine, Job, O_num, m_end)
-                #标定1、2工位需要使用砝码，若标定工位现有砝码不同，则需要等待换型完成；若砝码已在其它标定工位使用，则需要等其结束再换型
-                elif Selected_Machine == 6 or Selected_Machine == 7:
-                    WeightName = self.GAInput.ProcessingWeight[Job][Weight]
-                    Para = self.Get_Weight_Time(ealiest_start, Selected_Machine, WeightName, Job, O_num, m_end)
+                if self.GAInput.MachineNeedWorker.__contains__(Selected_Machine):
+                    #人工生产工序需求：
+                    #工件进入工位后，需要判断是否有空余的工人进行加工，如没有，则需要等待
+                    #标定1、2工位需要使用砝码，若标定工位现有砝码不同，则需要等待换型完成；若砝码已在其它标定工位使用，则需要等其结束再换型
+                    if Selected_Machine == 6 or Selected_Machine == 7:
+                        WeightName = self.GAInput.ProcessingWeight[Job][Weight]
+                        Para = self.Get_Weight_Time(ealiest_start, Selected_Machine, WeightName, Job, O_num, m_end)
+                    else:
+                        Para = self.Get_C_Time(ealiest_start, Selected_Machine, Job, O_num, m_end)
                 else:
+                    #自动化工序
                     Para = self.GetEndByStart(ealiest_start, O_num, Selected_Machine, Job)
                 if Para is None:
                     continue
@@ -91,13 +93,6 @@ class Decode:
                 End_work_time = Para[2]
                 if m_start <= M_Ealiest and End_work_time <= m_end: #可在该时窗内完成
                     return M_Ealiest, Selected_Machine, P_t, O_num,last_O_end,End_work_time
-        #无可插入的时窗，排在最后
-        ealiest_start = max(ealiest_start, self.Machines[Selected_Machine].End_time)
-        Para = self.GetEndByStart(ealiest_start, O_num, Selected_Machine, Job)
-        M_Ealiest = Para[0]
-        P_t = Para[1]
-        End_work_time = Para[2]
-        return M_Ealiest, Selected_Machine, P_t, O_num,last_O_end,End_work_time
     #解码
     def Decode_1(self,CHS:list[int],Len_Chromo):
         MS=list(CHS[0:Len_Chromo])
@@ -206,10 +201,10 @@ class Decode:
         else:
             #工件所有工序加工完成，返回加工完成时间
             return last_o_end
-    #获取C1~C4的首个工人可用时间
+    #获取首个工人可用时间
     def Get_C_Time(self, startTime: int, machine: int, Job: int, O_num: int, lastest_end: int):
         CWorkerCount = self.GAInput.ResourceConfig["CWorkerCount"]
-        # 先计算在startTime时刻，C1~C4有多少个正在加工的工件
+        # 先计算在startTime时刻，有多少个正在加工的工件
         while True:
             para = self.GetEndByStart(startTime, O_num, machine, Job)
             if para[2] > lastest_end:
@@ -218,7 +213,7 @@ class Decode:
             for m in range(para[0], para[2]):
                 # 每一分钟都进行判断 
                 CJobCount = 1   # 本工件也需要加工
-                for i in range(4):
+                for i in self.GAInput.MachineNeedWorker:
                     if machine == i:
                         continue
                     otherMachine = self.Machines[i]
@@ -241,6 +236,7 @@ class Decode:
     #获取标定可用时间
     def Get_Weight_Time(self, ealiest_start: int, machine: int, weightName: str, Job: int, O_num: int, lastest_end: int):
         resourceTime = ealiest_start
+        CWorkerCount = self.GAInput.ResourceConfig['CWorkerCount']
         Weight1TCount = self.GAInput.ResourceConfig["1T"]
         Weight2TCount = self.GAInput.ResourceConfig["2T"]
         Weight3TCount = self.GAInput.ResourceConfig["3T"]
@@ -313,6 +309,23 @@ class Decode:
                     #砝码冲突
                     conflict = True
                     break
+                #判断第m分钟工人数量是否冲突
+                CJobCount = 1   # 本工件也需要加工
+                for i in self.GAInput.MachineNeedWorker:
+                    if machine == i:
+                        continue
+                    otherMachine = self.Machines[i]
+                    #便利机器上所有的加工记录
+                    for j in range(len(otherMachine.assigned_task)):
+                        o_start = otherMachine.O_start[j]
+                        o_end = otherMachine.O_end[j]
+                        if o_start <= m and m <= o_end:
+                            #如果时间有交集，则工人数量加1
+                            CJobCount += 1
+                            break
+                if CJobCount > CWorkerCount:
+                    conflict = True
+                    break
             if conflict:
                 #不满足，继续
                 resourceTime = end_time[0] + 1
@@ -321,99 +334,3 @@ class Decode:
                 #无冲突
                 break
         return end_time
-        # #标定1
-        # machine1 = self.Machines[6]
-        # machine1EaliestStart = 0
-        # machine1Weight1TUsingCount = 0
-        # machine1Weight2TUsingCount = 0
-        # machine1Weight3TUsingCount = 0
-        # if len(machine1.assigned_task) > 0:
-        #     for i in range(len(machine1.assigned_task)):
-        #         if startTime 
-        #         o_start = machine1.O_start[i]
-        #         o_end = machine1.O_end[i]
-                
-        #         lastWeightIndex = machine1.worker_for_task[-1]
-        #         lastJobIndex = machine1.assigned_task[-1][0] - 1
-        #         last = self.GAInput.ProcessingWeight[lastJobIndex][lastWeightIndex]
-        #         if last == '1T':
-        #             machine1Weight1TUsingCount += 1
-        #         elif last ==  '2T':
-        #             machine1Weight2TUsingCount += 1
-        #         elif last ==  '3T':
-        #             machine1Weight3TUsingCount += 1
-        #         elif last ==  '6T':
-        #             machine1Weight3TUsingCount += 2  
-        #     if machine1.End_time > startTime:
-        #             machine1End = machine1.End_time
-        # #标定2
-        # machine2 = self.Machines[7]
-        # machine2End = 0
-        # machine2Weight1TUsingCount = 0
-        # machine2Weight2TUsingCount = 0
-        # machine2Weight3TUsingCount = 0
-        # if  len(machine2.assigned_task) > 0:
-        #     lastWeightIndex = machine2.worker_for_task[-1]
-        #     lastJobIndex = machine2.assigned_task[-1][0] - 1
-        #     last = self.GAInput.ProcessingWeight[lastJobIndex][lastWeightIndex]
-        #     if last == '1T':
-        #         machine2Weight1TUsingCount += 1
-        #     elif last == '2T':
-        #         machine2Weight2TUsingCount += 1
-        #     elif last == '3T':
-        #         machine2Weight3TUsingCount += 1
-        #     elif last == '6T':
-        #         machine2Weight3TUsingCount += 2  
-        #     if machine2.End_time > startTime:
-        #         machine2End = machine2.End_time
-        # if machine == 6:
-        #     if machine1End > resourceTime:
-        #         resourceTime = machine1End
-        #     #1.判断需用砝码是否有剩余，如果没有，需要等待使用结束
-        #     #2.判断所在标定工位上一个标定的是否是相同，如果不是，需要增加换型时间
-        #     if weightName == '1T':
-        #         if machine2Weight1TUsingCount + 1 > Weight1TCount and machine2End > machine1End:
-        #             resourceTime = machine2End
-        #         if machine1Weight1TUsingCount == 0:
-        #             resourceTime += 5
-        #     elif weightName ==  '2T':
-        #         if machine2Weight2TUsingCount + 1 > Weight2TCount and machine2End > machine1End:
-        #             resourceTime = machine2End
-        #         if machine1Weight2TUsingCount == 0:
-        #             resourceTime += 5
-        #     elif weightName ==  '3T':
-        #         if machine2Weight3TUsingCount + 1 > Weight3TCount and machine2End > machine1End:
-        #             resourceTime = machine2End
-        #         if machine1Weight3TUsingCount != 1:
-        #             resourceTime += 5
-        #     elif weightName ==  '6T':
-        #         if machine2Weight3TUsingCount + 2 > Weight3TCount and machine2End > machine1End:
-        #             resourceTime = machine2End
-        #         if machine1Weight3TUsingCount < 2:
-        #             resourceTime += 5
-        # elif machine == 7:
-        #     if machine2End > resourceTime:
-        #         resourceTime = machine2End
-        #     #1.判断需用砝码是否有剩余，如果没有，需要等待使用结束
-        #     #2.判断所在标定工位上一个标定的是否是相同，如果不是，需要增加换型时间
-        #     if weightName == '1T':
-        #         if machine1Weight1TUsingCount + 1 > Weight1TCount and machine1End > machine2End:
-        #             resourceTime = machine2End
-        #         if machine2Weight1TUsingCount == 0:
-        #             resourceTime += 5
-        #     elif weightName ==  '2T':
-        #         if machine1Weight2TUsingCount + 1 > Weight2TCount and machine1End > machine2End:
-        #             resourceTime = machine2End
-        #         if machine2Weight2TUsingCount == 0:
-        #             resourceTime += 5
-        #     elif weightName ==  '3T':
-        #         if machine1Weight3TUsingCount + 1 > Weight3TCount and machine1End > machine2End:
-        #             resourceTime = machine2End
-        #         if machine2Weight3TUsingCount != 1:
-        #             resourceTime += 5
-        #     elif weightName ==  '6T':
-        #         if machine1Weight3TUsingCount + 2 > Weight3TCount and machine1End > machine2End:
-        #             resourceTime = machine2End
-        #         if machine2Weight3TUsingCount < 2:
-        #             resourceTime += 5
-        # return resourceTime

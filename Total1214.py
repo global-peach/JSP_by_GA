@@ -1,4 +1,4 @@
-input = {
+inputJson = {
     "JobNameList":[
         "C350269968",
         "C350269915",
@@ -346,8 +346,9 @@ input = {
     "MachineStartTime": [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
     "TimeEfficent": [ 0 ],
     "MachineBuffer": [0,1,2,3,4,5,6,7,8,9],
+    "MachineNeedWorker":[0,1,2,3,6,7,8,9],
     "ResourceConfig": {
-        "CWorkerCount": 3,
+        "CWorkerCount": 7,
         "1T": 1,
         "2T": 1,
         "3T": 2,

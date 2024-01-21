@@ -22,6 +22,7 @@ class HFSPGAInput:
         self.ResourceConfig: object = {}
         self.TimeEfficent = []
         self.MachineBuffer = []
+        self.MachineNeedWorker = []
         self.IsWorst = False
         self.WeightExchangeTime = 5
         self.__dict__.update(dict)

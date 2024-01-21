@@ -6,10 +6,10 @@ from model import HFSPGAInput
 import openpyxl
 
 class JSPGAGraphPainter:
-    def main(self,inputParam: HFSPGAInput):
+    def main(self,inputParam: HFSPGAInput, date: str):
         ga = JSPGA.GA()
         result = ga.start(inputParam)
-        self.Gantt(result.Decode, inputParam)
+        self.Gantt(result.Decode, inputParam, date)
 
         # for i in range(len(result.CHS)):
         #     d = Decode(result.Decode.J, inputParam, result.Decode.M_num)
@@ -24,7 +24,7 @@ class JSPGAGraphPainter:
         plt.xlabel('Number of iterations')
         plt.show()
 
-    def Gantt(self, Decode: Decode, inputParam: HFSPGAInput):
+    def Gantt(self, Decode: Decode, inputParam: HFSPGAInput, date: str):
         Machines = Decode.Machines
         plt.figure(figsize=(16, 9))
         plt.rcParams['font.sans-serif']=['Microsoft YaHei']
@@ -77,6 +77,7 @@ class JSPGAGraphPainter:
                 plt.barh(i, width=end - start, height=0.8, left=start, \
                          color=M[len(M) - 1 - jobIndex], edgecolor='black')
                 plt.text(x=start + (end - start)/2-0.5, y=i, s=jobName)
+        taskName = '{0}排产{1}名工人总耗时{2}分钟'.format(date, inputParam.ResourceConfig['CWorkerCount'], totalEnd)
         workbook = openpyxl.Workbook()
         if len(workbook.sheetnames) == 0:
             worksheet = workbook.create_sheet(title='总耗时' + str(end))
@@ -86,17 +87,40 @@ class JSPGAGraphPainter:
             for column in range(len(process_data[row])):
                 cell = worksheet.cell(row=row + 1, column = column + 1)
                 cell.value = process_data[row][column]
-        workbook.save(str(totalEnd) + '加工过程.xlsx')
+        workbook.save(taskName + '过程表.xlsx')
         plt.yticks(np.arange(i + 1), inputParam.WorkStationNameList)
         plt.title('Scheduling Gantt chart')
         plt.ylabel('Work Center')
         plt.xlabel('Time(min)')
-        plt.savefig(str(totalEnd), dpi=300)
+        plt.savefig(taskName + '甘特图', dpi=300)
         plt.close('all')
         #plt.show()
 
 if __name__=='__main__':
-    from Total1214 import input
+    inputParam:HFSPGAInput = None
+    while True:
+        time = input('请输入排产日期：')
+        if time == '12-13':
+            from Total1213 import inputJson
+            inputParam = JSPGA.HFSPGAInput(inputJson)
+            break
+        elif time == '12-14':
+            from Total1214 import inputJson
+            inputParam = JSPGA.HFSPGAInput(inputJson)
+            break
+        elif time == '12-15':
+            from Total1215 import inputJson
+            inputParam = JSPGA.HFSPGAInput(inputJson)
+            break
+        else:
+            print('请在12-13 12-14 12-15三天中选择')
+    while True:
+        worker_count_str: str = input('请输入工人数量：')
+        if worker_count_str.isnumeric():
+            worker_count = int(worker_count_str)
+            if worker_count > 0 and worker_count <= 8:
+                inputParam.ResourceConfig['CWorkerCount'] = worker_count
+                break
+        print('请输入数字1-8')
     painter = JSPGAGraphPainter()
-    inputParam = JSPGA.HFSPGAInput(input)
-    painter.main(inputParam)
+    painter.main(inputParam, time)

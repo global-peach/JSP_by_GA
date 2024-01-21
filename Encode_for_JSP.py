@@ -44,6 +44,7 @@ class Encode:
             O_num = self.J[i + 1]
             for o in range(O_num):
                 OS_list.append(i)
+        random.shuffle(OS_list)
         return OS_list
     #生成工序准备的部分
     def OS_List(self):

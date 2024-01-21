@@ -1,4 +1,5 @@
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
+import datetime
 import numpy as np
 import random
 from Decode_for_JSP import Decode
@@ -234,7 +235,7 @@ class GA:
         return idx
 
     def start(self, inputParam: HFSPGAInput) -> JSPGAResult:
-        print('开始迭代计算' + ('最优' if inputParam.IsWorst is False else '最差') + '排产')
+        print('{0} 开始迭代计算{1}排产'.format(datetime.datetime.now(), '最优' if inputParam.IsWorst is False else '最差'))
         J = {}
         J_num = 0
         M_num = 0
@@ -309,5 +310,6 @@ class GA:
         if Optimal_CHS is int and Optimal_CHS == 0:
             raise Exception('无法完成排产')
         d.Decode_1(Optimal_CHS, Len_Chromo)
+        print('{0} 迭代结束{1}排产：{2}'.format(datetime.datetime.now(), '最优' if inputParam.IsWorst is False else '最差', Optimal_fit))
         return JSPGAResult(d, Best_fit, Worst_fit, Avg_fit, Optimal_CHS, Len_Chromo, C)
 

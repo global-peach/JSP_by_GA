@@ -5,16 +5,11 @@ import numpy as np
  
 class Decode:
     def __init__(self, J, GAInput: HFSPGAInput, M_num):
-        self.Processing_time = GAInput.ProcessingTime
-        self.Machine_start_time = GAInput.MachineStartTime
-        self.Time_efficent = GAInput.TimeEfficent
-        self.Machine_buffer = GAInput.MachineBuffer
         self.GAInput = GAInput
         self.Scheduled = []  # 已经排产过的工序
         self.M_num = M_num
         self.Machines: list[Machine_Time_window] = []  # 存储机器类
         self.fitness = 0
-        self.IsWorst = GAInput.IsWorst
         self.J=J            #
         for j in range(M_num):
             self.Machines.append(Machine_Time_window(j))
@@ -35,7 +30,7 @@ class Decode:
             JM_i=[]
             T_i=[]
             for j in range(len(Ms_decompose[i])):
-                O_j=self.Processing_time[i][j]
+                O_j=self.GAInput.ProcessingTime[i][j]
                 M_ij=[]
                 T_ij=[]
                 for Mac_num in range(len(O_j)):  # 寻找MS对应部分的机器时间和机器顺序
@@ -58,8 +53,8 @@ class Decode:
         elif index == 6: #包装工序
             Selected_Machine = self.Jobs[Job].J_machine[5] + 2 #所在标定工位+2即为包装工位
         machine_start = 0   # 本机器开工时间
-        if (self.Machine_start_time is not None and len(self.Machine_start_time) > Selected_Machine):
-            machine_start = self.Machine_start_time[Selected_Machine]
+        if (self.GAInput.MachineStartTime is not None and len(self.GAInput.MachineStartTime) > Selected_Machine):
+            machine_start = self.GAInput.MachineStartTime[Selected_Machine]
         last_O_end = self.Jobs[Job].Last_Processing_end_time  #本工件上道工序结束时间
         Next_Machine_start_time = self.Get_Job_Shift_Time(self.Machines[Selected_Machine],JM, last_O_end)   #本机器上一个工件的流转时刻
         ealiest_start = max(machine_start, last_O_end, Next_Machine_start_time)
@@ -76,12 +71,15 @@ class Decode:
             if m_start <= ealiest_start and ealiest_start < m_end:
                 if self.GAInput.MachineNeedWorker.__contains__(Selected_Machine):
                     #人工生产工序需求：
-                    #工件进入工位后，需要判断是否有空余的工人进行加工，如没有，则需要等待
-                    #标定1、2工位需要使用砝码，若标定工位现有砝码不同，则需要等待换型完成；若砝码已在其它标定工位使用，则需要等其结束再换型
                     if Selected_Machine == 6 or Selected_Machine == 7:
+                        #标定1、2工位需要使用砝码，若标定工位现有砝码不同，则需要等待换型完成；若砝码已在其它标定工位使用，则需要等其结束再换型
                         WeightName = self.GAInput.ProcessingWeight[Job][Weight]
                         Para = self.Get_Weight_Time(ealiest_start, Selected_Machine, WeightName, Job, O_num, m_end)
+                    elif Selected_Machine == 8 or Selected_Machine == 9:
+                        #包装1、2工位需要考虑尺寸大小的排序
+                        Para = self.Get_Package_Time(ealiest_start, Selected_Machine, Job, O_num, m_end)
                     else:
+                        #工件进入工位后，需要判断是否有空余的工人进行加工，如没有，则需要等待
                         Para = self.Get_C_Time(ealiest_start, Selected_Machine, Job, O_num, m_end)
                 else:
                     #自动化工序
@@ -110,20 +108,22 @@ class Decode:
             if Para[5] > self.fitness:
                 self.fitness = Para[5]
             self.Machines[Para[1]]._Input(Job, Para[0], Para[5], Para[2], Para[3], weight)
-        return self.fitness if self.IsWorst is False else 1 / self.fitness
+        return self.fitness if self.GAInput.IsWorst is False else 1 / self.fitness
     #根据工序开始时间计算结束时间
-    def GetEndByStart(self, ealiest_start, O_num, Machine, Job):
+    def GetEndByStart(self, ealiest_start, O_num, Machine, Job, AdditionalTime = 0):
         M_Ealiest = ealiest_start # 加工开始时间
         End_work_time = M_Ealiest # 计算跳过休息时间的加工结束时间
         rest_work = 1 # 剩余加工进度，初始100%
         P_t = 0 # 总加工时间
-        # P_t=self.Processing_time[Job][O_num][Machine]
-        for i in range(len(self.Time_efficent)):
-            start = self.Time_efficent[i] # 开始时间
+        # P_t=self.GAInput.ProcessingTime[Job][O_num][Machine]
+        for i in range(len(self.GAInput.TimeEfficent)):
+            start = self.GAInput.TimeEfficent[i] # 开始时间
             end = 9999 # 结束时间
-            if i + 1 < len(self.Time_efficent):
-                end = self.Time_efficent[i + 1]
-            efficent = self.Processing_time[Job][O_num][Machine][i] # 根据能效获取节拍
+            if i + 1 < len(self.GAInput.TimeEfficent):
+                end = self.GAInput.TimeEfficent[i + 1]
+            efficent = self.GAInput.ProcessingTime[Job][O_num][Machine][i] # 根据能效获取节拍
+            if AdditionalTime > 0:
+                efficent = efficent + AdditionalTime
             if end < M_Ealiest:
                 continue
             if start <= M_Ealiest and end > M_Ealiest:
@@ -184,8 +184,8 @@ class Decode:
             next_o_machine = self.Machines[next_o_machine_index]
             #判断下一个机器是否有buffer
             next_o_machine_has_buffer = False
-            if self.Machine_buffer is not None:
-                for i in self.Machine_buffer:
+            if self.GAInput.MachineBuffer is not None:
+                for i in self.GAInput.MachineBuffer:
                     if i ==  next_o_machine_index:
                         next_o_machine_has_buffer = True
                         break
@@ -202,11 +202,11 @@ class Decode:
             #工件所有工序加工完成，返回加工完成时间
             return last_o_end
     #获取首个工人可用时间
-    def Get_C_Time(self, startTime: int, machine: int, Job: int, O_num: int, lastest_end: int):
+    def Get_C_Time(self, startTime: int, machine: int, Job: int, O_num: int, lastest_end: int, AdditionalTime = 0):
         CWorkerCount = self.GAInput.ResourceConfig["CWorkerCount"]
         # 先计算在startTime时刻，有多少个正在加工的工件
         while True:
-            para = self.GetEndByStart(startTime, O_num, machine, Job)
+            para = self.GetEndByStart(startTime, O_num, machine, Job, AdditionalTime)
             if para[2] > lastest_end:
                 return None
             conflict = False
@@ -217,7 +217,7 @@ class Decode:
                     if machine == i:
                         continue
                     otherMachine = self.Machines[i]
-                    #便利机器上所有的加工记录
+                    #遍历机器上所有的加工记录
                     for j in range(len(otherMachine.assigned_task)):
                         o_start = otherMachine.O_start[j]
                         o_end = otherMachine.O_end[j]
@@ -334,3 +334,49 @@ class Decode:
                 #无冲突
                 break
         return end_time
+    
+    def Get_Package_Time(self, startTime: int, machine: int, Job: int, O_num: int, lastest_end: int):
+        #如果新结束的订单比上一个结束的订单大时，新订单结束时间增加
+        #如果连续5组订单符合从大到小排列，则第六组开始重置规则
+        #比较大小时，长或宽有一项小于等于上一个结束的订单时即可
+        tasks = self.Machines[machine].assigned_task
+        needExtraTime = False
+        if len(tasks) > 0:
+            consecutiveCount = 0
+            for i in range(len(tasks)):
+                if i == 0:
+                    consecutiveCount = 1
+                else:
+                    if consecutiveCount == self.GAInput.PackageMaxLength:
+                        #达到组合数量上限，重置规则
+                        consecutiveCount = 1
+                    else:
+                        #比大小
+                        lastJobIndex = tasks[i - 1][0] - 1
+                        lastJobSize = self.GAInput.ProcessingSize[lastJobIndex]
+                        lastJobLength = lastJobSize[0]
+                        lastJobWidth = lastJobSize[1]
+                        jobIndex = tasks[i][0] - 1
+                        jobSize = self.GAInput.ProcessingSize[jobIndex]
+                        jobLength = jobSize[0]
+                        jobWidth = jobSize[1]
+                        if jobLength <= lastJobLength or jobWidth <= lastJobWidth:
+                            consecutiveCount = consecutiveCount + 1#继续叠
+                        else:
+                            consecutiveCount = 1#重置
+            if consecutiveCount < self.GAInput.PackageMaxLength:
+                #需要与上一个结束的订单比大小
+                lastJobIndex = tasks[-1][0] - 1
+                lastJobSize = self.GAInput.ProcessingSize[lastJobIndex]
+                lastJobLength = lastJobSize[0]
+                lastJobWidth = lastJobSize[1]
+                jobSize = self.GAInput.ProcessingSize[Job]
+                jobLength = jobSize[0]
+                jobWidth = jobSize[1]
+                if jobLength > lastJobLength and jobWidth > lastJobWidth:
+                    needExtraTime = True#重置
+        if needExtraTime == False:
+            return self.Get_C_Time(startTime, machine, Job, O_num, lastest_end)
+        else:
+            return self.Get_C_Time(startTime, machine, Job, O_num, lastest_end, self.GAInput.PackageExtraTime)
+        

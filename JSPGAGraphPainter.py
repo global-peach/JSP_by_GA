@@ -112,8 +112,16 @@ if __name__=='__main__':
             from Total1215 import inputJson
             inputParam = JSPGA.HFSPGAInput(inputJson)
             break
+        elif time == 'special':
+            from TotalSpecial import inputJson
+            inputParam = JSPGA.HFSPGAInput(inputJson)
+            break
+        elif time == '9-4':
+            from Total20240904 import inputJson
+            inputParam = JSPGA.HFSPGAInput(inputJson)
+            break
         else:
-            print('请在12-13 12-14 12-15三天中选择')
+            print('请在12-13 12-14 12-15 special 9-4 中选择')
     while True:
         worker_count_str: str = input('请输入工人数量：')
         if worker_count_str.isnumeric():

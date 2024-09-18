@@ -16,6 +16,7 @@ class HFSPGAInput:
         self.ProcessingGroup = []
         self.MachineStartTime = []
         self.ProcessingWeight: list[list[str]] = []
+        self.ProcessingSize: list[list[int]] = []
         self.JobNameList = []
         self.ProcessNameList = []
         self.WorkStationNameList = []
@@ -24,5 +25,7 @@ class HFSPGAInput:
         self.MachineBuffer = []
         self.MachineNeedWorker = []
         self.IsWorst = False
-        self.WeightExchangeTime = 5
+        self.WeightExchangeTime = 3
+        self.PackageExtraTime = 3
+        self.PackageMaxLength = 5
         self.__dict__.update(dict)
